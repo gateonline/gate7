@@ -73,10 +73,7 @@ function loadQuestion() {
 
     let html = "";
 
-    /* ============================
-       NAT
-       ============================ */
-
+    // NAT
     if (q.type === "NAT") {
         html = `
             <label for="natAnswer">
@@ -98,10 +95,7 @@ function loadQuestion() {
         `;
     }
 
-    /* ============================
-       MSQ
-       ============================ */
-
+    // MSQ
     else if (q.type === "MSQ") {
         q.options.forEach(function(opt, i) {
             const checked =
@@ -122,10 +116,7 @@ function loadQuestion() {
         });
     }
 
-    /* ============================
-       MCQ
-       ============================ */
-
+    // MCQ
     else if (q.type === "MCQ") {
         q.options.forEach(function(opt, i) {
             const checked = answers[current] === i;
@@ -157,10 +148,7 @@ function loadQuestion() {
 function saveCurrentAnswer() {
     const q = questions[current];
 
-    /* ============================
-       NAT
-       ============================ */
-
+    // NAT
     if (q.type === "NAT") {
         const input = document.getElementById("natAnswer");
 
@@ -180,10 +168,7 @@ function saveCurrentAnswer() {
         return true;
     }
 
-    /* ============================
-       MCQ
-       ============================ */
-
+    // MCQ
     if (q.type === "MCQ") {
         const selected = document.querySelector(
             'input[name="option"]:checked'
@@ -198,10 +183,7 @@ function saveCurrentAnswer() {
         return true;
     }
 
-    /* ============================
-       MSQ
-       ============================ */
-
+    // MSQ
     if (q.type === "MSQ") {
         const selected = document.querySelectorAll(
             'input[name="option"]:checked'
@@ -437,9 +419,10 @@ function closeNameModal() {
 
 /* =====================================================
    SCORE CALCULATION
+
    MCQ: correct +marks, wrong -marks/3
    MSQ: exact match earns full marks
-   NAT: answer within tolerance earns full marks
+   NAT: compare answers rounded to 2 decimal places
    ===================================================== */
 
 function calculateScore() {
@@ -456,19 +439,15 @@ function calculateScore() {
             continue;
         }
 
-        /* ============================
-           NAT
-           ============================ */
-
+        // NAT — correct to 2 decimal places
         if (q.type === "NAT") {
             const studentValue = Number(studentAnswer);
             const correctValue = Number(q.answer);
-            const tolerance = Number(q.tolerance ?? 0);
 
             if (
                 Number.isFinite(studentValue) &&
                 Number.isFinite(correctValue) &&
-                Math.abs(studentValue - correctValue) <= tolerance
+                studentValue.toFixed(2) === correctValue.toFixed(2)
             ) {
                 score += q.marks;
             }
@@ -476,21 +455,25 @@ function calculateScore() {
             continue;
         }
 
-        /* ============================
-           MSQ
-           ============================ */
-
+        // MSQ — exact set match
         if (q.type === "MSQ") {
             if (!Array.isArray(studentAnswer)) {
                 continue;
             }
 
-            const student = studentAnswer.slice().sort((a, b) => a - b);
-            const correct = q.correctAnswers.slice().sort((a, b) => a - b);
+            const student = studentAnswer
+                .slice()
+                .sort((a, b) => a - b);
+
+            const correct = q.correctAnswers
+                .slice()
+                .sort((a, b) => a - b);
 
             const isCorrect =
                 student.length === correct.length &&
-                student.every((value, index) => value === correct[index]);
+                student.every(
+                    (value, index) => value === correct[index]
+                );
 
             if (isCorrect) {
                 score += q.marks;
@@ -499,10 +482,7 @@ function calculateScore() {
             continue;
         }
 
-        /* ============================
-           MCQ
-           ============================ */
-
+        // MCQ — correct answer or negative marking
         if (q.type === "MCQ") {
             if (studentAnswer === q.answer) {
                 score += q.marks;
@@ -538,11 +518,7 @@ function finalSubmit() {
 
     const score = calculateScore();
 
-    /* =================================================
-       GOOGLE APPS SCRIPT WEB APP
-       Retained from your original script
-       ================================================= */
-
+    // Existing Google Apps Script Web App URL
     let url =
         "https://script.google.com/macros/s/AKfycby2vuKQDmRUojEtfP7br6Hwlxca9IVZJsk7cqXXgBzVixzFqctsUSuX3l2e2eFZ-_nnsw/exec";
 
@@ -550,13 +526,7 @@ function finalSubmit() {
     url += "&mobile=" + encodeURIComponent(mobile);
     url += "&score=" + encodeURIComponent(score);
 
-    /* =================================================
-       SEND ANSWERS Q1–Q23
-       MCQ: option letter
-       MSQ: comma-separated option letters
-       NAT: numerical value
-       ================================================= */
-
+    // Send all answers to Google Sheets
     for (let i = 0; i < questions.length; i++) {
         let answer = "";
         const q = questions[i];
@@ -583,10 +553,7 @@ function finalSubmit() {
             encodeURIComponent(answer);
     }
 
-    /* =================================================
-       SEND WITHOUT LEAVING PAGE
-       ================================================= */
-
+    // Submit without leaving the exam page
     const iframe = document.createElement("iframe");
 
     iframe.style.display = "none";
@@ -594,10 +561,7 @@ function finalSubmit() {
 
     document.body.appendChild(iframe);
 
-    /* =================================================
-       EXAM FINISHED
-       ================================================= */
-
+    // Finish exam
     examEnded = true;
     clearInterval(timerInterval);
 
